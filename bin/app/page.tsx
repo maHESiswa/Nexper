@@ -1,103 +1,148 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { FC, useState, useRef, KeyboardEvent } from 'react';
+
+// === DEFINISI TEMPLATE DINAMIS ===
+const templates = {
+  span: (text: string, id: number) => (
+    <span key={id} className="px-3 py-1 bg-gray-100 rounded border text-gray-800">
+      {text}
+    </span>
+  ),
+  p: (text: string, id: number) => (
+    <p key={id} className="px-3 py-1 bg-blue-50 rounded border text-blue-800">
+      {text}
+    </p>
+  ),
+  h3: (text: string, id: number) => (
+    <h3 key={id} className="px-3 py-1 bg-purple-50 rounded border font-medium text-purple-800">
+      {text}
+    </h3>
+  ),
+  div: (text: string, id: number) => (
+    <div key={id} className="px-3 py-1 bg-yellow-50 rounded border text-yellow-800 text-sm">
+      {text}
+    </div>
+  ),
+  // Tambah template lain? Cukup tambah di sini → tombol otomatis muncul!
+};
+
+type ElementType = keyof typeof templates;
+
+interface ElementItem {
+  id: number;
+  text: string;
+  type: ElementType;
+}
+
+const DynamicJsxTemplates: FC = () => {
+  const [items, setItems] = useState<ElementItem[]>([]);
+  const [isAdding, setIsAdding] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const [selectedType, setSelectedType] = useState<ElementType>('span');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Fokus otomatis saat input aktif
+  if (isAdding && inputRef.current) {
+    inputRef.current.focus();
+  }
+
+  // Ambil daftar tipe dari templates
+  const availableTypes = Object.keys(templates) as ElementType[];
+
+  // Handler: klik tombol tipe
+  const handleAddClick = (type: ElementType) => {
+    setSelectedType(type);
+    setIsAdding(true);
+    setInputValue('');
+  };
+
+  // Handler: Enter atau Escape di input
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && inputValue.trim()) {
+      const newId = Date.now(); // Untuk demo; ganti dengan nanoid/uuid jika butuh unik absolut
+      const newItem: ElementItem = {
+        id: newId,
+        text: inputValue.trim(),
+        type: selectedType,
+      };
+      setItems((prev) => [...prev, newItem]);
+      reset();
+    } else if (e.key === 'Escape') {
+      reset();
+    }
+  };
+
+  const reset = () => {
+    setIsAdding(false);
+    setInputValue('');
+  };
+
+  // Hapus berdasarkan ID (lebih aman daripada index)
+  const removeElement = (id: number) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Render elemen dari data
+  const renderElement = (item: ElementItem) => {
+    const Template = templates[item.type];
+    return Template(item.text, item.id);
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="p-6 space-y-6 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold">Template JSX Dinamis + Tombol Teknis</h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* === MODE INPUT === */}
+      {isAdding ? (
+        <div className="flex gap-3 items-center flex-wrap">
+          <span className="text-sm font-medium text-gray-700">
+            Tambah <strong className="font-mono">{selectedType}</strong>:
+          </span>
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={`Masukkan teks untuk ${selectedType}...`}
+            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-40 shadow-sm"
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      ) : (
+        /* === GRUP TOMBOL OTOMATIS (NAMA TEKNIS) === */
+        <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-lg border">
+          {availableTypes.map((type) => (
+            <button
+              key={type}
+              onClick={() => handleAddClick(type)}
+              className="px-4 py-2 text-sm font-mono font-medium rounded-md hover:shadow-sm transition-all
+                bg-white border border-gray-200 hover:bg-gray-50
+                text-gray-700 hover:text-gray-900"
+            >
+              + {type}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* === RENDER ELEMEN-ELEMEN === */}
+      <div className="flex flex-wrap gap-3 mt-6">
+        {items.map((item) => (
+          <div key={item.id} className="group relative inline-flex">
+            {renderElement(item)}
+            <button
+              onClick={() => removeElement(item.id)}
+              className="absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center rounded-full bg-red-500 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-md"
+              aria-label={`Hapus elemen ${item.type}`}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
-}
+};
+
+export default DynamicJsxTemplates;
